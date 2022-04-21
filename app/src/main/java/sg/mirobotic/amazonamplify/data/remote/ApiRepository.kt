@@ -2,14 +2,13 @@ package sg.mirobotic.amazonamplify.data.remote
 
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import okhttp3.ResponseBody
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import sg.mirobotic.amazonamplify.data.local.Conversation
-import sg.mirobotic.amazonamplify.data.local.DIALOG_CLOSE
-import sg.mirobotic.amazonamplify.data.local.INTENT_WELCOME
+import sg.mirobotic.amazonamplify.data.local.*
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -44,6 +43,10 @@ class ApiRepository() {
         return sessionId.toString()
     }
 
+    private fun renewSession() {
+            sessionId = UUID.randomUUID()
+    }
+
     private val apiInterfaceSecure = ApiClientSecure().getRetrofitInstance().create(ApiInterface::class.java)
 
     fun askQuestion(text: String, intentName: String, dialogType: String, onResponseMessageListener: OnResponseMessageListener) {
@@ -70,6 +73,52 @@ class ApiRepository() {
                     try {
                         val obj = JSONObject(r!!)
                         val conversation: Conversation = Gson().fromJson(obj.toString(), Conversation::class.java)
+                        Log.e(TAG,"Slots > = ${conversation.state?.intent?.slots}")
+
+                        val intent = conversation.state?.intent?.name ?: ""
+                        val slots = conversation.state?.intent?.slots ?: JsonObject()
+
+                        try {
+                            when(intent) {
+
+                                INTENT_ACCOUNT -> {
+
+                                    if (slots.has(SLOT_EXISTING_ACCOUNT)) {
+                                        val value = slots.getAsJsonObject(SLOT_EXISTING_ACCOUNT).getAsJsonObject("value").getAsJsonArray("resolvedValues").get(0).asString.lowercase()
+
+                                        Log.e(TAG,"$INTENT_ACCOUNT Value > $value")
+
+                                        if (value == "yes") {
+                                            renewSession()
+                                            askQuestion("I have account with DBS", intentName, dialogType, onResponseMessageListener)
+                                            return
+                                        }else if (value == "no") {
+                                            renewSession()
+                                            askQuestion("open new account", intentName, dialogType, onResponseMessageListener)
+                                            return
+                                        }
+
+                                    }
+                                }
+
+                                INTENT_ACCOUNT_NEW -> {
+                                    if (slots.has(SLOT_CITIZEN)) {
+                                        val value = slots.getAsJsonObject(SLOT_CITIZEN).getAsJsonObject("value").getAsJsonArray("resolvedValues").get(0).asString
+
+                                        Log.e(TAG,"$SLOT_CITIZEN Value > $value")
+
+                                        if (value.lowercase() == "no") {
+                                            onResponseMessageListener.onMessage(Conversation.getConversation("Sorry we cannot offer account to you. To create account you must be Singapore citizen or have PR, EP or SP"))
+                                            return
+                                        }
+                                    }
+                                }
+
+                            }
+                        }catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
                         onResponseMessageListener.onMessage(conversation)
                         return
                     }catch (e: Exception) {

@@ -1,24 +1,39 @@
 package sg.mirobotic.amazonamplify.data.local
 
+import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
+import org.json.JSONObject
 
 class Conversation {
 
     @SerializedName("data")
-    val messages: ArrayList<Content>? = null
+    var messages: ArrayList<Content>? = null
 
     @SerializedName("state")
-    val state: State? = null
+    var state: State? = null
+
+    companion object {
+        fun getConversation(msg: String, state: State? = null): Conversation {
+            val conversation = Conversation()
+            conversation.state = state
+
+            val content = Content()
+            content.contentType = "PlainText"
+            content.content = msg
+            conversation.messages = arrayListOf(content)
+            return conversation
+        }
+    }
 
 }
 
 class Content {
 
     @SerializedName("contentType")
-    val contentType: String = ""
+    var contentType: String = ""
 
     @SerializedName("content")
-    val content: String? = null
+    var content: String? = null
 
     @SerializedName("imageResponseCard")
     val card: Card? = null
@@ -73,6 +88,9 @@ class State {
         val name: String = ""
         @SerializedName("state")
         val state: String = ""
+
+        @SerializedName("slots")
+        val slots: JsonObject = JsonObject()
     }
 
     class DialogAction {
