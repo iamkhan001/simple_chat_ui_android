@@ -127,7 +127,14 @@ class MainActivity : AppCompatActivity() {
 
             conversation.messages?.forEach {
                 if (it.contentType == "PlainText") {
-                    model.speak(it.content)
+
+                    val msg = it.content
+
+                    if(msg?.contains("...") == true) {
+                        msg.replace("...", "")
+                    }
+
+                    model.speak(msg)
                     messageAdapter.addMessage(Message.receiveMessage(it.content ?: "", showYesNo))
                 }else if (it.contentType == "ImageResponseCard") {
                     it.card?.let { card ->
@@ -143,6 +150,7 @@ class MainActivity : AppCompatActivity() {
 
         override fun onError(msg: String) {
             binding.progressBar.visibility = View.INVISIBLE
+            model.speak(msg)
             messageAdapter.addMessage(Message.receiveMessage(msg))
             goToEnd()
             enableViews(true)

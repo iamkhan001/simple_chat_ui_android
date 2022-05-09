@@ -106,9 +106,24 @@ class ApiRepository() {
                                         val value = slots.getAsJsonObject(SLOT_CITIZEN).getAsJsonObject("value").getAsJsonArray("resolvedValues").get(0).asString
 
                                         Log.e(TAG,"$SLOT_CITIZEN Value > $value")
+                                        when(value.lowercase()) {
+                                            "ep" -> {
+                                                renewSession()
+                                                askQuestion("Foreigner working in singapore", intentName, dialogType, onResponseMessageListener)
+                                                return
+                                            }
+                                        }
+
+                                    }
+                                }
+                                INTENT_ACCOUNT_OLD -> {
+                                    if (slots.has(SLOT_INTERNET_BANKING)) {
+                                        val value = slots.getAsJsonObject(SLOT_INTERNET_BANKING).getAsJsonObject("value").getAsJsonArray("resolvedValues").get(0).asString
+
+                                        Log.e(TAG,"$SLOT_INTERNET_BANKING Value > $value")
 
                                         if (value.lowercase() == "no") {
-                                            onResponseMessageListener.onMessage(Conversation.getConversation("Sorry we cannot offer account to you. To create account you must be Singapore citizen or have PR, EP or SP"))
+                                            onResponseMessageListener.onMessage(Conversation.getConversation("Please reach out to our executive, he will assist you to open without internet banking account."))
                                             return
                                         }
                                     }
@@ -126,7 +141,7 @@ class ApiRepository() {
                     }
                     return
                 }
-                var error = "Invalid username or password"
+                var error = "Sorry! I cannot understand your request.\nPlease try again."
                 try {
                     if (response.errorBody() != null) {
                         val obj = JSONObject(response.errorBody()!!.string())

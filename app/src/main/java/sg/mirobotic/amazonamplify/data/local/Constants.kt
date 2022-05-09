@@ -10,5 +10,7 @@ const val INTENT_ACCOUNT_NEW = "account_new"
 const val INTENT_ACCOUNT_OLD = "account_old"
 
 const val INTENT_FALL_BACK = "FallbackIntent"
+const val NewAccountEP = "NewAccountEP"
+const val SLOT_INTERNET_BANKING = "InternetBanking"
 const val SLOT_CITIZEN = "Citizen"
 const val SLOT_EXISTING_ACCOUNT = "FirstAccount"
