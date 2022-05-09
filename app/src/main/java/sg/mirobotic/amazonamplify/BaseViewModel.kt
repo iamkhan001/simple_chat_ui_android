@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import sg.mirobotic.amazonamplify.data.remote.ApiRepository
+import sg.mirobotic.amazonamplify.data.remote.OnResponseAnswerListener
 import sg.mirobotic.amazonamplify.data.remote.OnResponseMessageListener
 import java.util.*
 
@@ -43,12 +44,19 @@ class BaseViewModel : ViewModel() {
     }
 
     fun sendTextMessage(text: String, onResponseMessageListener: OnResponseMessageListener) {
-        Log.e(TAG,"Send >> $text")
+        Log.e(TAG,"sendTextMessage >> $text")
         viewModelScope.launch {
             apiRepository.askQuestion(text, intentName, dialogType, onResponseMessageListener)
         }
     }
 
+
+    fun askQuestion(text: String, onResponseMessageListener: OnResponseAnswerListener) {
+        Log.e(TAG,"askQuestion >> $text")
+        viewModelScope.launch {
+            apiRepository.askQuestion(text, onResponseMessageListener)
+        }
+    }
 
     companion object {
 

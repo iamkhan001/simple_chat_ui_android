@@ -11,13 +11,15 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import sg.mirobotic.amazonamplify.adapters.MessageAdapter
+import sg.mirobotic.amazonamplify.adapters.QAAdapter
 import sg.mirobotic.amazonamplify.data.local.*
+import sg.mirobotic.amazonamplify.data.remote.OnResponseAnswerListener
 import sg.mirobotic.amazonamplify.data.remote.OnResponseMessageListener
 import sg.mirobotic.amazonamplify.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var messageAdapter: MessageAdapter
+    private lateinit var messageAdapter: QAAdapter
     private val model: BaseViewModel by viewModels()
 
     private lateinit var binding: ActivityMainBinding
@@ -56,7 +58,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        messageAdapter = MessageAdapter(itemClickListener)
+        messageAdapter = QAAdapter(itemClickListener)
         binding.list.adapter = messageAdapter
 
         binding.fabSend.setOnClickListener {
@@ -75,75 +77,23 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        val message1 = Message.receiveMessage("IMPORTANT NOTICE: To support safe distancing, please visit branches only when necessary. Learn More.\n" +
-                "\n" +
-                "Check out our digital services below.\n" +
-                "\n" +
-                "What can I help you with?")
-        messageAdapter.addMessage(message1)
-
-        val cards = ArrayList<Content.Card>()
-        cards.add(
-            Content.Card(
-                "Transaction",
-                arrayListOf(
-                    Content.Button.getButton("Cash Withdraw"),
-                    Content.Button.getButton("Cash Deposit"),
-                    Content.Button.getButton("Funds Transfer")
-                )
-            )
-        )
-        cards.add(
-            Content.Card(
-                "Account",
-                arrayListOf(
-                    Content.Button.getButton("Open account"),
-                    Content.Button.getButton("Statements"),
-                    Content.Button.getButton("Balance Inquiry")
-                )
-            )
-        )
-        cards.add(
-            Content.Card(
-                "Loan",
-                arrayListOf(
-                    Content.Button.getButton("Home Loan"),
-                    Content.Button.getButton("Personal Loan"),
-                    Content.Button.getButton("Car Loan")
-                )
-            )
-        )
-        messageAdapter.addMessage(Message.receiveMessage("", false, cards))
 
     }
 
-    private val  onResponseMessageListener = object : OnResponseMessageListener {
 
-        override fun onMessage(conversation: Conversation) {
+    private val  onResponseMessageListener = object : OnResponseAnswerListener {
+
+        override fun onMessage(results: ArrayList<Answer>) {
             binding.progressBar.visibility = View.INVISIBLE
-            model.intentName = conversation.state?.intent?.name ?: ""
-
-            val showYesNo = conversation.state?.dialogAction?.type == DIALOG_CONFIRM && model.intentName != INTENT_WELCOME
-
-            conversation.messages?.forEach {
-                if (it.contentType == "PlainText") {
-
-                    val msg = it.content
-
-                    if(msg?.contains("...") == true) {
-                        msg.replace("...", "")
-                    }
-
-                    model.speak(msg)
-                    messageAdapter.addMessage(Message.receiveMessage(it.content ?: "", showYesNo))
-                }else if (it.contentType == "ImageResponseCard") {
-                    it.card?.let { card ->
-                        model.speak(card.title)
-                        messageAdapter.addMessage(Message.receiveMessage(card.title, showYesNo, arrayListOf(card)))
-                    }
-                }
+            if (results.isNotEmpty()) {
+                val answer = results[0]
+                model.speak(answer.getReadableText())
+                messageAdapter.addMessage(QAMessage.receiveMessage("", results))
+            }else {
+                val msg = "Sorry! I cannot understand your request.\nPlease try again."
+                model.speak(msg)
+                messageAdapter.addMessage(QAMessage.receiveMessage(msg, results))
             }
-            Log.e(TAG,"Intent > ${model.intentName}")
             goToEnd()
             enableViews(true)
         }
@@ -151,7 +101,7 @@ class MainActivity : AppCompatActivity() {
         override fun onError(msg: String) {
             binding.progressBar.visibility = View.INVISIBLE
             model.speak(msg)
-            messageAdapter.addMessage(Message.receiveMessage(msg))
+            messageAdapter.addMessage(QAMessage.receiveMessage(msg, ArrayList()))
             goToEnd()
             enableViews(true)
         }
@@ -160,11 +110,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateSentMessage(text: String) {
 
-        messageAdapter.addMessage(Message.sendMessage(text))
+        messageAdapter.addMessage(QAMessage.sendMessage(text))
 
         binding.progressBar.visibility = View.VISIBLE
         enableViews(false)
-        model.sendTextMessage(text, onResponseMessageListener)
+        model.askQuestion(text, onResponseMessageListener)
 
         goToEnd()
     }

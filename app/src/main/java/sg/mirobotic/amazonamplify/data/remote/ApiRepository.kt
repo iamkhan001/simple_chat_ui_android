@@ -157,4 +157,59 @@ class ApiRepository() {
         })
 
     }
+
+    fun askQuestion(text: String, onResponseMessageListener: OnResponseAnswerListener) {
+
+        val map = HashMap<String, String>()
+        map["text"] = text
+
+        val call = apiInterfaceSecure.askQuestion(map)
+
+        call.enqueue(object : Callback<ResponseBody> {
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                Log.e(TAG, "Error: ${t.printStackTrace()}")
+                onResponseMessageListener.onError("No internet access")
+            }
+
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+
+                val r = response.body()?.string()
+                Log.e(TAG,"res: $r")
+
+                if (response.code() == 200 && response.body() != null) {
+                    try {
+                        val obj = JSONObject(r!!).getJSONObject("data")
+
+                        if (obj.has("answers")) {
+                            val answers = obj.getJSONArray("answers")
+                            val results = DataConverter.toAnswers(answers)
+
+                            onResponseMessageListener.onMessage(results)
+                            return
+                        }
+
+                        val error = obj.getJSONObject("error").getString("message")
+                        onResponseMessageListener.onError(error)
+
+                    }catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                var error = "Sorry! I cannot understand your request.\nPlease try again."
+                try {
+                    if (response.errorBody() != null) {
+                        val obj = JSONObject(response.errorBody()!!.string())
+                        if (obj.has("msg")) {
+                            error = obj.getString("msg")
+                        }
+                    }
+                }catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                onResponseMessageListener.onError(error)
+            }
+        })
+
+    }
 }
