@@ -9,8 +9,8 @@ data class Answer(
     @SerializedName("score") val score: Double,
 ) {
     fun getReadableText(): String = if(answer.length > 300) {
-        answer.substring(0, 300)+"..."
+        answer.substring(0, 300).replace("*", "")+"..."
     }else {
-        answer
+        answer.replace("*", "")
     }
 }
