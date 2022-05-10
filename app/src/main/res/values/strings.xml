@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Amazon Lex</string>
+    <string name="app_name">Azure Bot</string>
     <string name="enter_message_here">Enter message here</string>
 </resources>
